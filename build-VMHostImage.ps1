@@ -37,10 +37,10 @@
     Build an ESXi image without the HA vib
     >build-vmhostimage.ps1 -noHA
 .NOTES
-    File Name          : create-VMHostImage.ps1
+    File Name          : build-VMHostImage.ps1
     Author             : B. Lievers
     Prerequisite       : PowerShell V2 over Vista and upper.
-    Version            : 2.7.5
+    Version            : 0.1
     Copyright 2016 - Bart Lievers
 #>
 [CmdletBinding()]
@@ -59,7 +59,7 @@ Begin{
     #-- load default parameter
     #-- Load Parameterfile
     if (!(test-path -Path $scriptpath\parameters.ps1 -IsValid)) {
-        write-warning "parameters.ps1 niet gevonden. Script kan niet verder."
+        write-warning "parameters.ps1 not found. Script will exit."
         exit
     }
     $P = & $scriptpath\parameters.ps1
@@ -88,7 +88,7 @@ Begin{
     #-- clock time and say bye bye
     $ts_end=get-date
     write-host ("Runtime script: {0:hh}:{0:mm}:{0:ss}" -f ($ts_end- $TS_start)  )
-    read-host "Einde script. bye bye ([Enter] to quit.)"
+    read-host "End script. bye bye ([Enter] to quit.)"
     exit
     }
 
@@ -106,11 +106,8 @@ Begin{
         Prerequisite       : <Preruiqisites like
                              Min. PowerShell version : 2.0
                              PS Modules and version :
-                                PowerCLI - 6.0 R2
-        Version/GIT Tag    : 1.0.0
-        Last Edit          : BL - 3-1-2016
-        CC-release         :
-        Copyright 2016 - CAM IT Solutions
+                                PowerCLI - 5.5
+        Last Edit          : BL - 22-11-2016
     #>
     [CmdletBinding()]
 
@@ -129,43 +126,47 @@ Begin{
             #-- PowerCLI is not installed
             if ($log) {$log.warning("Cannot load PowerCLI, no VMware Powercli Modules and/or Snapins found.")}
             else {
-            write-warning "PowerCLI modules en/of snappins zijn niet gevonden."}
+            write-warning "Cannot load PowerCLI, no VMware Powercli Modules and/or Snapins found."}
             #-- exit function
             return $false
         }
-        #-- load modules
-        #-- make inventory of already loaded VMware modules
-        $loaded = Get-Module -Name vmware* -ErrorAction Ignore | % {$_.Name}
-        #-- make inventory of available VMware modules
-        $registered = Get-Module -Name vmware* -ListAvailable -ErrorAction Ignore | % {$_.Name}
-        #-- determine which modules needs to be loaded, and import them.
-        $notLoaded = $registered | ? {$loaded -notcontains $_}
 
-        foreach ($module in $registered) {
-            if ($loaded -notcontains $module) {
-                Import-Module $module
+        #-- load modules
+        if ($RegisteredModules) {
+            #-- make inventory of already loaded VMware modules
+            $loaded = Get-Module -Name vmware* -ErrorAction Ignore | % {$_.Name}
+            #-- make inventory of available VMware modules
+            $registered = Get-Module -Name vmware* -ListAvailable -ErrorAction Ignore | % {$_.Name}
+            #-- determine which modules needs to be loaded, and import them.
+            $notLoaded = $registered | ? {$loaded -notcontains $_}
+
+            foreach ($module in $registered) {
+                if ($loaded -notcontains $module) {
+                    Import-Module $module
+                }
             }
         }
 
         #-- load Snapins
-        #-- Exlude loaded modules from additional snappins to load
-        $snapinList=Compare-Object -ReferenceObject $RegisteredModules -DifferenceObject $RegisteredSnapins  -erroraction silentlycontinue | ?{$_.sideindicator -eq "=>"}  | %{$_.inputobject}
-        #-- Make inventory of loaded VMware Snapins
-        $loaded = Get-PSSnapin -Name $snapinList -ErrorAction Ignore | % {$_.Name}
-        #-- Make inventory of VMware Snapins that are registered
-        $registered = Get-PSSnapin -Name $snapinList -Registered -ErrorAction Ignore  | % {$_.Name}
-        #-- determine which snapins needs to loaded, and import them.
-        $notLoaded = $registered | ? {$loaded -notcontains $_}
+        if ($RegisteredSnapins) {      
+            #-- Exlude loaded modules from additional snappins to load
+            $snapinList=Compare-Object -ReferenceObject $RegisteredModules -DifferenceObject $RegisteredSnapins | ?{$_.sideindicator -eq "=>"} | %{$_.inputobject}
+            #-- Make inventory of loaded VMware Snapins
+            $loaded = Get-PSSnapin -Name $snapinList -ErrorAction Ignore | % {$_.Name}
+            #-- Make inventory of VMware Snapins that are registered
+            $registered = Get-PSSnapin -Name $snapinList -Registered -ErrorAction Ignore  | % {$_.Name}
+            #-- determine which snapins needs to loaded, and import them.
+            $notLoaded = $registered | ? {$loaded -notcontains $_}
 
-        foreach ($snapin in $registered) {
-            if ($loaded -notcontains $snapin) {
-                Add-PSSnapin $snapin
+            foreach ($snapin in $registered) {
+                if ($loaded -notcontains $snapin) {
+                    Add-PSSnapin $snapin
+                }
             }
         }
-
         #-- show loaded vmware modules and snapins
-        get-module -Name vmware* | select name,version,@{N="type";E={"module"}} | ft -AutoSize
-        get-pssnapin -Name vmware* | select name,version,@{N="type";E={"snapin"}} | ft -AutoSize
+        if ($RegisteredModules) {get-module -Name vmware* | select name,version,@{N="type";E={"module"}} | ft -AutoSize}
+          if ($RegisteredSnapins) {get-pssnapin -Name vmware* | select name,version,@{N="type";E={"snapin"}} | ft -AutoSize}
 
     }
 
