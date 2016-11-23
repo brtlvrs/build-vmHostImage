@@ -1,45 +1,41 @@
 ﻿<#
 .SYNOPSIS
-   Automatiseren van het aanmaken van een Offline bundle en ISO image voor een VMware ESXi host
+   Workflow automation for building a vSphere ESXi image (offline bundle and .iso)
 .DESCRIPTION
-    Dit script is bedoelt om een VMware offline bundle en een ISO image te compileren met extra vibs.
-    Hiervoor is een standaard folderstructuur nodig. Wanneer deze niet aanwezig is, wordt deze aangemaakt.
-    Deze structuur is:
-    ..\<Image naam>\
-        Image\                   -- output folder, hierin komen .ISO, offline bundle en samenvatting bestanden.
-            <Image naam>.zip     -- Offline Bundle
-            <Image naam>.iso     -- ISO file
-            added.txt            -- drivers / vibs die zijn toegevoegd t.o.v. basis offline bundle
-            overgeslagen.txt     -- drivers / vibs die overgeslagen zijn omdat ze al in de offline bundle zitten
-            viblist.txt          -- overzicht van alle vibs in het nieuwe image
-        Source\          -- bron folder, wanneer deze leeg is, wordt er voorgesteld om gebruik te maken van de VMware repository
-        Vibs\                    -- eventuele vibs die mee gecompileerd moeten worden
-            <vendor A>\
-            <vendor B>\
-        create-VMHostImage.ps1
-        vCenterFQDN.xml
+    Workflow script to automate the building of a vSphere ESXi image.
+    The script needs the parameters.ps1 file.
+    It can be used for multiple 'projects'. Each project has the same folder structure.
+    Folder structure when finished is like,
+    .\
+     build-VMHostImage.ps1
+     parameters.ps1
+     <image name>\
+               vCenterFQDN.xml                        --- vCenter FQDN to download HA vib from
+               Source\                                --- folder containing ESXi offline bundle as a source
+               Vibs\                                  --- folder containing vibs to add to the new image
+                   <vendor A>\
+                           <vib offline bundles>.zip
+                   <vendor B>\
+                           <vib offline bundles>.zip
+               Image\                                 --- output folder containing both offline bundle and .iso image file
+                   <image name>.zip
+                   <image name>.iso
+                   added.txt                          --- list of vibs added to the source image
+                   skipped.txt                        --- vibs that are skipped
+                   viblist.txt                        --- list containing all vibs in the created image
 
-    Standaard wordt van de naam van de folder waarin dit script staat, gebruikt als naam voor het image. Dit is interactief te wijzigen.
-    De vendor subfolders in Vibs\ zijn cosmetisch.
-
-    Wanneer geen offline bundle als bron gevonden kan worden, wordt voorgesteld om gebruik te maken van de VMware repository op internet.
-    Het image wat hier als basis image geselecteerd wordt, wordt dan ook ge-exporteerd naar de Offline Bundle\ folder.
-    Het VMware online software Depot wordt (indien mogelijk) gefilterd op versie. Wanneer de naam van het nieuwe image conform conventie is,
-    zal automatisch de correcte ESXi versie gefilterd worden.
-    Wanneer dit niet mogelijk is, verschijnt er een grid-view met de mogelijke filter opties.
-
-    Standaard wordt ervanuit gegaan dat de HA vib van vmware mee gecompileerd moet worden. Het script vraagt om de FQDN van de vCenter.
-    Deze FQDN wordt opgeslagen in vCenterFQDN.xml, zodat bij vervolg compilaties de FQDN als default opgegeven wordt.
-    Wanneer de Vcenter niet te bereiken is, kan deze vib niet meegecompileerd worden.
+    When the script detects no folder structure beneath the <image name>, it will create one.
+    Also, if there is no offline bundle in the source folder, the script will contact the online VMware repository 
+    and shows a selection in a gridview of the images that can be used. 
 
 .PARAMETER noHA
-    [switch] Compileer zonder de HA vib van vCenter.
-    Standaard wordt er een poging gedaan om te compileren met de HA vib.
+    [switch] Build the image without the HA vib from the vCenter
+
 .PARAMETER useVMwareDepot
-    [switch] Maak geen gebruik van de offline bundle in de folder offline bundle, maar selecteer een bundle uit de VMware Online Repository
+    [switch] use the VMware online repository for selecting a source image.
 .EXAMPLE
-    Een custom image maken met de vibs, maar zonder HA vib
-    >create-vmhostimage.ps1 -noHA
+    Build an ESXi image without the HA vib
+    >build-vmhostimage.ps1 -noHA
 .NOTES
     File Name          : create-VMHostImage.ps1
     Author             : B. Lievers
@@ -556,8 +552,8 @@ Begin{
             $CompareGrouped=$Compare | Group-Object -Property sideindicator -AsHashTable
             if ($CompareGrouped."==") {
                 #-- report software packages that already are part of image
-                write-host ($CompareGrouped."==".count.ToString() +" software packages worden overgeslagen, deze zijn al aanwezig. Zie overgeslagen.txt")
-                $CompareGrouped."==" | select -ExpandProperty Inputobject | select name, summary,vendor,version,creationdate | sort-object name | ft -AutoSize | out-string -Width 256| Out-File -FilePath ($ProjectPath+'\Image\Overgeslagen.txt')
+                write-host ($CompareGrouped."==".count.ToString() +" software packages are being skipped, these are already part of the source image. see .\image\skipped.txt")
+                $CompareGrouped."==" | select -ExpandProperty Inputobject | select name, summary,vendor,version,creationdate | sort-object name | ft -AutoSize | out-string -Width 256| Out-File -FilePath ($ProjectPath+'\Image\skipped.txt')
             }
             if ($CompareGrouped."=>") {
                 #-- add the software packages to the image
@@ -567,7 +563,7 @@ Begin{
                 $CompareGrouped."=>" | select -ExpandProperty inputobject -Unique |  select name, summary,vendor,version,creationdate | sort-object name|ft -autosize |out-string -Width 256 | Out-File -FilePath $ProjectPath\Image\added.txt
 
                 Add-EsxSoftwarePackage -ImageProfile $NewImName -SoftwarePackage $drivers
-                write-host ("De volgende  "+ $CompareGrouped."=>".Count.tostring() + " software packages (vibs) zijn toegevoegd: ")
+                write-host ("De volgende  "+ $CompareGrouped."=>".Count.tostring() + " software packages (vibs) are added: ")
                 write-host ($CompareGrouped."=>" | select -ExpandProperty inputobject | select name, summary,vendor,version | out-string)
             }
         }
