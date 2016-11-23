@@ -490,9 +490,9 @@ Begin{
     do {
         #-- validate image name
         if  ( ($answ)) {
-            if (-not(validate-ImageName -ImageName $NewIMName -Explain)) {
-                write-warning "Image naam is niet conform naam conventie."
-            }
+   #         if (-not(validate-ImageName -ImageName $NewIMName -Explain)) {
+   #             write-warning "Image naam is niet conform naam conventie."
+   #         }
         }
         if ($newIMName.Length -gt 0) {
             Write-Host "Image name : " $NewIMName
