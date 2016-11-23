@@ -496,13 +496,13 @@ Begin{
         }
         if ($newIMName.Length -gt 0) {
             Write-Host "Image name : " $NewIMName
-            $answ=Read-Host "Is dit correct ? [j/N]"
+            $answ=Read-Host "Is this correct ? [y/N]"
         }
         if ($answ.Length -eq 0) {$answ="N"} #-- default input
         if ($answ -imatch "n|N") {
-            $NewIMName=read-host " Wat wordt de naam van het image ?? "
+            $NewIMName=read-host " What is the image name ?? "
             if ($NewIMName.Length -eq 0) {
-                write-host "Geen naam opgegeven."
+                write-host "No image name given."
                 exit-script
             } else {
                 $createFolder=$true
@@ -513,7 +513,7 @@ Begin{
     } while ($answ -inotmatch " y|Y|j|J")
     if ($createFolder) {
         New-Item -Path $scriptpath -name $newImName -ItemType directory -Confirm:$false -force | Out-Null
-        write-host "Image subfolder aangemaakt."
+        write-host "Created image subfolder."
 
     }
     return $NewIMName
