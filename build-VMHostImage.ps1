@@ -464,9 +464,9 @@ Begin{
     Function get-ImageProject {
         $IMProjects=Get-ChildItem -Path $scriptpath -Filter IM-* -Directory
         if ($imProjects) {
-            $IMProject= $IMprojects | Out-GridView -OutputMode Single -Title "Selecteer ESXi Image Project ([Cancel] voor een nieuw project)" | select -ExpandProperty name
+            $IMProject= $IMprojects | Out-GridView -OutputMode Single -Title "Select an ESXi Image Project ([Cancel] to start a new project)" | select -ExpandProperty name
         } else {
-            write-host "Geen subfolders gevonden met een vmHost image (IM-*)."
+            write-host "No subfolders found that start with (IM-*)."
             $imProject=$null
         }
         return $improject
@@ -645,7 +645,7 @@ End{
 
 Process{
     #-- start of script
-    #-- 1. laad de PowerCLI modules
+    #-- 1. load PowerCLI
     write-host "1. Loading PowerCLI"
     import-PowerCLI | out-null
 
