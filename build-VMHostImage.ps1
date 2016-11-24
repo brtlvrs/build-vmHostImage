@@ -185,10 +185,9 @@ Begin{
     function check-folderStructure {
     <#
     .SYNOPSIS
-        Check if subfolder structure is inplace
+        Check if folderstructure of image project is valid
     .DESCRIPTION
-        Check if subfolder structure is inplace.
-        And create missing subfolders.
+        Validation and/or repar folderstructure of image project 
         Returns $true if image or source folder isn't present
     #>
     param(
@@ -219,7 +218,7 @@ Begin{
         Check if .ISO and Offline Bundle already exists in image Folder
     .DESCRIPTION
         Check if .ISO and Offline Bundle already exists in image Folder.
-        If files exist, ask if they should be remoted.
+        If files exist, ask if they should be removed.
     #>
     [CmdletBinding()]
     param(
@@ -230,10 +229,10 @@ Begin{
 
     $runExport=$false
     if (Get-ChildItem -Path ("$ProjectPath\image") | ?{$_.fullname -match "$NewIMName.zip|$NewImName.iso"}) {
-        write-host "Kan niet exporteren, offline bundle en/of .iso bestanden bestaan al."
+        write-host "Unable to export to offline bundle and/or .iso, files already exist in image folder."
             do {
-                #-- vraag of bestaande bestanden verwijderd mogen worden.
-                $answ=read-host "Bestaande bestanden verwijderen ? [j/N] :  "
+                #-- Ask if files can be removed.
+                $answ=read-host "Would you like to remove the existing files ? [y/N] :  "
                 switch -Regex ($answ)  {
                     "" {
                         #-- Geen input gegeven, dus gebruik default
@@ -241,13 +240,13 @@ Begin{
                     "Y|y|j|J" {
                         #-- remove old files
                         $RunExport=$true
-                        write-host "Bezig met verwijderen van bestaande offline bundle en .iso in image folder."
+                        write-host "Removing existing offline bundle and .iso file in image folder."
                         Get-ChildItem -Path ("$ProjectPath\image") | ?{$_.fullname -match "$NewIMName.zip|$NewImName.iso"} | Remove-Item -Force
                         break
                         }
                     "[^yYjJnN]" {
                         #-- wrong input
-                        Write-Warning "Ongeldige input."
+                        Write-Warning "Incorrect answer."
                         break
                         }
                 }
@@ -339,7 +338,7 @@ Begin{
         $answer=$false
         if (Get-ChildItem -Path ("$ProjectPath\Source") | ?{$_.fullname -match "$SourceIMName.zip"}) {
             do {
-                $answer=read-host "$SourceIMName bestaat al in folder Offline Bundle, vervangen ? [j/N]"
+                $answer=read-host "$SourceIMName bestaat al in folder Offline Bundle, vervangen ? [y/N]"
                 if ($answer.Length -eq 0) {$answer="N"}
                 switch -Regex ($answer)  {
                     "Y|y|j|J" {
@@ -643,7 +642,7 @@ Process{
             $answer="Y"
         } else {
             write-warning "Er zijn geen Offline Bundle(s) gevonden."
-            $answer=read-host "VMware online software depot gebruiken om source te selecteren ?? [j/N]"
+            $answer=read-host "VMware online software depot gebruiken om source te selecteren ?? [y/N]"
         }
         if ($answer.length -eq 0) {$answer="N"}
         switch -Regex ($answer)  {
