@@ -196,16 +196,16 @@ Begin{
         #-- check if folderstructure is inplace, if not, create it.
         $isNoDir=$false
         if ((Test-Path -Path "$ProjectPath\image") -eq $false) {
-            write-warning "Image folder ontbreekt, deze wordt aangemaakt."
+            write-warning "Image folder is missing, creating folder."
             New-Item -ItemType Directory -Path "$ProjectPath\Image" | Out-Null
             $isnoDir = $isNoDir -or $true
         }
         if ((Test-Path -Path "$ProjectPath\Vibs") -eq $false) {
-            write-warning "Vibs folder ontbreekt, deze wordt aangemaakt."
+            write-warning "Vibs folder is missing, creating folder."
             New-Item -ItemType Directory -Path "$ProjectPath\Vibs"  | Out-Null
         }
         if ((Test-Path -Path "$ProjectPath\Source") -eq $false) {
-            write-warning "Source (Offline Bundle) folder ontbreekt, deze wordt aangemaakt."
+            write-warning "Source (Offline Bundle) folder is missing, creating folder."
             New-Item -ItemType Directory -Path "$ProjectPath\Source"  | Out-Null
             $isnoDir = $isNoDir -or $true
         }
@@ -246,7 +246,7 @@ Begin{
                         }
                     "[^yYjJnN]" {
                         #-- wrong input
-                        Write-Warning "Incorrect answer."
+                        Write-Warning "Invalid answer."
                         break
                         }
                 }
@@ -274,6 +274,7 @@ Begin{
     $row.Filter="ESXi-6.5.*-standard"
     $row.Omschrijving="vSphere host 6.5"
     $row.id="65"
+    $list+=$row
     $row= "" | select Filter,Omschrijving,ID
     $row.Filter="ESXi-6.0.*-standard"
     $row.Omschrijving="vSphere host 6.0"
@@ -312,8 +313,8 @@ Begin{
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)][string]$ProjectPath,
-        [parameter(Mandatory=$true,helpmessage="Naam van het te exporteren image.")][string]$NewIMName,
-        [Parameter(helpmessage="Subfolder waarin de images worden opgeslagen.")][string]$exportFolderName="Image"
+        [parameter(Mandatory=$true,helpmessage="Profile image name to export.")][string]$NewIMName,
+        [Parameter(helpmessage="child-folder to export image to.")][string]$exportFolderName="Image"
     )
         #-- export Image profile
         Export-EsxImageProfile -ImageProfile $NewIMName -FilePath "$ProjectPath\$exportFolderName\$NewIMName.iso" -ExportToIso
@@ -337,12 +338,12 @@ Begin{
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)][string]$NewIMName
     )
         #--check if Base Offline Bundle already exists
-        write-host "Bezig met Exporteren van VMware Offline Bundle $SourceIMName naar Offline Bundle folder"
+        write-host "VMware Offline bundle $SourceIMName is being downloaded to the source folder." 
         $exportpath="$ProjectPath\Source\$SourceIMName.zip"
         $answer=$false
         if (Get-ChildItem -Path ("$ProjectPath\Source") | ?{$_.fullname -match "$SourceIMName.zip"}) {
             do {
-                $answer=read-host "$SourceIMName bestaat al in folder Offline Bundle, vervangen ? [y/N]"
+                $answer=read-host "$SourceIMName already exists in .\source\ folder, do you want to replace it ? [y/N]"
                 if ($answer.Length -eq 0) {$answer="N"}
                 switch -Regex ($answer)  {
                     "Y|y|j|J" {
@@ -351,7 +352,7 @@ Begin{
                         }
                     "[^yYjJnN]" {
                         #-- wrong input
-                        Write-Warning "Ongeldige input."
+                        Write-Warning "Invalid answer."
                         break
                         }
                 }
@@ -359,7 +360,7 @@ Begin{
         }
         #-- Export Image profile to offline bundle in offline bundle folder
         if (($answer -imatch "j|J|y|Y") -or -not($answer)) {
-            write-host "Image $SourceIMName wordt als offline bundle ge-exporteerd."
+      #      write-host "Image $SourceIMName wordt als offline bundle ge-exporteerd."
             Export-EsxImageProfile -ImageProfile $SourceIMName -FilePath $exportpath -ExportToBundle
         }
         return $exportpath
@@ -383,12 +384,12 @@ Begin{
         } else {
             $def_FQDNvCenter = ""
         }
-        [string]$FQDNvCenter=read-host ("Wat is de FQDN van de vCenter server om de HA vib te laden ? ["+$def_FQDNvCenter+"]")
+        [string]$FQDNvCenter=read-host ("What is the vCenter's FQDN to download the HA vib from ? ["+$def_FQDNvCenter+"]")
         do {
             $validFQDN=$false
 
             if (($FQDNvCenter.Length -eq 0) -and  ($def_FQDNvCenter.Length -eq 0)  ) {
-                write-warning "Geen geldige FQDN opgegeven van de vCenter om HA vib te gebruiken."
+                write-warning "Invalid FQDN for the vCenter."
             }
             if ($FQDNvCenter.Length -eq 0) {
                 $FQDNvCenter = $def_FQDNvCenter
@@ -398,12 +399,12 @@ Begin{
             if ($FQDNvCenter.Length -eq 0) {
                 $noHA=$true
             } elseif (-not(Test-Connection -ComputerName $FQDNvCenter -Count 1 -Quiet)) {
-                Write-Warning "vCenter $FQDNvCenter reageert niet."
-                $FQDNvCenter=read-host "Wat is de FQDN van de vCenter server ? "
+                Write-Warning "vCenter $FQDNvCenter doesn't respond."
+                $FQDNvCenter=read-host "What is the vCenter's FQDN ? "
                 if ($FQDNvCenter.Length -eq 0) {
-                    #-- geen input gekregen, gaan door zonder vib voor HA
+                    #-- No input received, proceed without HA vib
                     $noHA=$true
-                    write-host "Geen input gehad, HA vib wordt overgeslagen."
+                    write-host "No input received, HA vib will not be implemented."
                 }
             } else {
                 #-- vCenter FQDN is geldig
@@ -542,7 +543,7 @@ Begin{
     )
     #-- check if URL is valid
     if ($URL -inotmatch "^(http://|https://).*") {
-        write-verbose "URL begint niet met http:// of https://, we proberen http://"
+        write-verbose "http:// or https:// not found at start of URL, using http://"
         $URL=("HTTP://"+$URL)
     }
     #-- Try http request
@@ -559,11 +560,11 @@ Begin{
        switch -Regex ($error[0])
        {
             ".*The remote name could not be resolved.*" {
-                write-warning "URL $URL reageert niet."
+                write-warning "URL $URL is not responding."
                 break
                 }
             default {
-                write-warning "Fout bij testen van URL $URL."
+                write-warning "Error while testing $URL."
                 write-warning $error[0].Exception.message
             }
        }
@@ -574,7 +575,7 @@ Begin{
     if ($http_response ) {
         $HTTP_Status = [int]$HTTP_Response.StatusCode
         If ($HTTP_Status -ne 200) {
-            write-warning "$URL reageert niet."
+            write-warning "$URL is not responding."
         }
     }
 
@@ -586,7 +587,7 @@ Begin{
 
     #-- validate Powershell version
     if ($PSVersionTable.PSVersion.Major -lt 3) {
-        write-host "PowerShell versie is te laag. Minimaal versie 3 vereist."
+        write-host "PowerShell version is not valid, at least version 3 is needed."
         exit-script
     }
 }
@@ -635,18 +636,18 @@ Process{
     if (($useVMwareDepot -eq $false)) {
         #-- scan the Source folder for offline bundles
         [array]$OfflineBundles=Get-ChildItem -Path ($ProjectPath+"\Source") -Filter *.zip
-        if ($OfflineBundles.count -eq 0) {write-host "Geen Offline bundles gevonden in $ProjectPath\Source"}
+        if ($OfflineBundles.count -eq 0) {write-host "No offline bundles found in $ProjectPath\Source"}
         }
     #-- Ask to use VMware online software depot when no offline bundles are found
     $UsingVMwareRepos=$false
     if (-not $OfflineBundles) {
         #-- no offline bundles found in .\Source folder, trying to use VMware Repository
         if ($useVMwareDepot) {
-            write-host "VMware Online software depot wordt gebruikt om een source te selecteren."
+            write-host "VMware Online software depot is being used to select a source offline bundle."
             $answer="Y"
         } else {
-            write-warning "Er zijn geen Offline Bundle(s) gevonden."
-            $answer=read-host "VMware online software depot gebruiken om source te selecteren ?? [y/N]"
+            write-warning "No offline bundle(s) are found."
+            $answer=read-host "Should we use VMware online software depot to select a source bundle ?? [y/N]"
         }
         if ($answer.length -eq 0) {$answer="N"}
         switch -Regex ($answer)  {
@@ -659,7 +660,7 @@ Process{
                 break
                 }
             "[^yYjJnN]" { #-- wrong input
-                Write-Warning "Ongeldige input."
+                Write-Warning "Invalid answer."
                 break
                 }
         }
@@ -671,28 +672,28 @@ Process{
 
     if ($UsingVMwareRepos) {
     if ((test-URL -URL $P.VMwareDepot) -eq $false)  {
-        Write-Warning "VMware Online software depot is niet te bereiken."        exit-script
+        Write-Warning "Couldn't reach VMware Software Depot."        exit-script
     }
-        write-host "Bezig met laden van VMware online software depot."
+        write-host "Busy loading VMware Software Depot."
         $URLDepots += $P.VMwareDepot
         Add-EsxSoftwareDepot -DepotUrl $P.VMwareDepot | out-null
         #-- vanwege een bug moet er gefilterd worden, zie vmware KB 2089217 voor meer info
-        #-- filter a.d.v. opgegeven VMware versie in image naam        switch -Regex ($NewIMName) {            #-- image naam is een IM-CCESXi.... image            "^IM-CCESXi\d{2,2}(|(P|U|EP)\d{1,2})" {                $version = $NewIMName.Substring(9,2)                $tmpOnlineFilter=Filter-VMwareDepot -version $version                break                }            #-- image naam is een IM-CCMESXi.... of een IM-CCWESXi.... image            "^IM-CC(W|M)ESXi\d{2,2}(|(P|U|EP)\d{1,2})"{                $version = $NewIMName.Substring(10,2)                $tmpOnlineFilter=Filter-VMwareDepot -version $version                break                }            #-- image naam is niet conform naamconventie            default {$tmpOnlineFilter=Filter-VMwareDepot }        }
+        #-- filter a.d.v. opgegeven VMware versie in image naam        switch -Regex ($NewIMName) {            #-- image naam is een IM-.... image            "^IM-\d{2,2}(|(P|U|EP)\d{1,2})" {                $version = $NewIMName.Substring(3,2)                $tmpOnlineFilter=Filter-VMwareDepot -version $version                break                }            #-- image naam is niet conform naamconventie            default {$tmpOnlineFilter=Filter-VMwareDepot }        }
         #-- select an image as the source
-        $SourceIMName=Get-EsxImageProfile -Name $tmpOnlineFilter | select name,Vendor,Description,CreationTime | sort Name | Out-GridView -Title "Selecteer een ESXi image"  -PassThru | select -ExpandProperty Name
+        $SourceIMName=Get-EsxImageProfile -Name $tmpOnlineFilter | select name,Vendor,Description,CreationTime | sort Name | Out-GridView -Title "Select an ESXi image"  -PassThru | select -ExpandProperty Name
         #-- check if name of the source and name of the new image are not the same
         if ($SourceIMName -imatch $NewIMName) {
-            Write-Warning "Het gekozen image naam komt voor in het VMware Depot, kies een andere naam voor het nieuwe image."
+            Write-Warning "Name for new image is the same as the source, please use a new name."
             $NewIMName=get-ImageName -noGuess
             if ($SourceIMName -imatch $NewIMName) {
-                write-warning "Het gekozen image naam komt voor in het VMware Depot."
-                write-warning "Script kan niet verder uitgevoerd worden."
+                write-warning "The new image name exists in the software depot."
+                write-warning "Script will exit."
                 exit-script
             }
         }
         #-- check if we have a source image selected
         if (-not $SourceIMName) {
-            write-warning "Er is geen offline bundle als source geselecteerd."
+            write-warning "No source offline bundle is selected."
             exit-script
         }
         #-- export the selected  image to the source folder, and reload it. (so other image exports are using the local image instead of the remote image)
@@ -702,17 +703,22 @@ Process{
         Add-EsxSoftwareDepot -DepotUrl $OfflineBundleDepot
     }
 
-    #-- Exit script if script started without subfolders.
-    if ($hadNoDirs) {
+    #-- Ask to put vibs in the vibs folder
+    if ($hadNoDirs -or (!$hadnodirs -and !$noha)) {
 
-        write-host ("Plaats de VIB bestanden in de locatie "+$scriptpath+"\"+$NewImName+"\Vibs")
-        $answ=read-host "Zijn de VIB bestanden geplaatst ? [j\N]"
-        if ($answ -inotmatch "j|J|y|Y" ) {
+        write-host ("Place VIB files in folder "+$scriptpath+"\"+$NewImName+"\Vibs")
+        $answ=read-host "Are the vibs placed ? [y\N]"
+        if ($answ -imatch "n|N") {
+            $answ2=read-host "Continue without vibs ? [y/N] "
+            if ($answ2 -inotmatch "j|J|y|Y") {
+                exit-script
+            }
+        } elseif ($answ -inotmatch "j|J|y|Y" ) {
         exit-script}
    }
 
     #-- 3. 	laad de drivers en offline bundle
-    write-host "3. ESXi software Depot opbouwen aan de hand van offline bundle en drivers"
+    write-host "3. Compose software depot"
     #-- bouw lijst van bestanden die geladen moet worden
     Get-ChildItem -Path ($ProjectPath+"\Vibs") -Filter *.zip -Recurse | select -ExpandProperty Fullname | %{
         $row= "" | select Name
@@ -721,7 +727,7 @@ Process{
     }
     #-- voeg de vib bestanden toe
     if ($viblist.count -eq 0) {
-        Write-Warning "Geen Vibs gevonden."
+        Write-Warning "No vibs available."
     } else {
         $VibList | %{$urlDepots += $_.Name}
     }
@@ -730,19 +736,22 @@ Process{
         $URLDepots += "http://"+ $FQDNvCenter +"/vSphere-HA-depot" }
 
     #-- laad de bestanden
-    if ($URLDepots.count -eq 0) {write-error "Geen software depots om te laden."}
+    if ($URLDepots.count -eq 0) {
+        write-error "No valid software depot to use."
+        exit-script
+    }
     $URLDepots.GetEnumerator() | %{Add-EsxSoftwareDepot -DepotUrl $_ | out-null}
 
     #-- 4. Clone het image profile uit de offline bundle
-    Write-host "4. Nieuw ESXi image profile $NewIMName aan het maken."
+    Write-host "4. Building new ESXi Image profile $NewIMName ."
 
     #-- check if name of new image is not already known
     if (Get-EsxImageProfile -name $NewIMName) {
-        Write-Warning "De naam van het nieuwe image komt al voor in de gekozen Offline bundles. Kies een andere naam voor het image."
+        Write-Warning "New image name already exists in software depot, please change the name for the new image."
         $NewIMName=get-ImageName -noGuess
         if ($SourceIMName -imatch $NewIMName) {
-            write-warning "De naam van het nieuwe image komt al voor in de gekozen Offline bundles."
-            write-warning "Script kan niet verder uitgevoerd worden."
+            write-warning "The name for the new image exists in the software depots."
+            write-warning "Script cannot continue."
             exit-script
         }
     }
@@ -751,8 +760,7 @@ Process{
     #--clone to new image profile
     if (-not($UsingVMwareRepos)) {
         $tmp=Get-EsxImageProfile | ?{$_.name -match "\d-standard$" } | sort | select -First 1 -ExpandProperty name
-        #$SourceIMName= Read-Host "Wat is de naam van het Image Profile die als basis gebruikt moet worden ?? [" $tmp "]"
-        $SourceIMName=(get-EsxImageProfile | select name | Out-GridView -Title "Welk ESXi image profile dient als basis ?"   -PassThru).name
+        $SourceIMName=(get-EsxImageProfile | select name | Out-GridView -Title "Select source offline bundle to use?"   -PassThru).name
         if ($SourceIMName.length -lt 1) {$SourceIMName=$tmp}
     }
 
@@ -762,7 +770,7 @@ Process{
     if ((($VibList.count -ne 0) -or ($noHA -eq $false)) ) { add-Vibs2Image -ProjectPath $projectpath -NewImName $NewIMName }
 
     #-- 6. image exporteren als offline bundle en als .iso
-    write-host "6. Image profile $NewIMName  exporteren als offline bundle en .iso"
+    write-host "6. Exporting Image profile $NewIMName  to a offline bundle and .iso"
     if ($RunExports) {export-Images -NewIMName $NewIMName -ProjectPath $ProjectPath }
     #-- list content of image folder
     Get-ChildItem  -path ("$ProjectPath\image") | ft -a
