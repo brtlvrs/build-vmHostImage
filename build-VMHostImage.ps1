@@ -182,56 +182,6 @@ Begin{
             }
     }
 
-    function validate-ImageName {
-    <#
-    .SYNOPSIS
-        Validate Image name to export conform Naming Convention
-    .DESCRIPTION
-        Validate the the input.
-        Name convention image name :
-        IM-CC<Prefix>ESXi<main version><sub version>-<datestamp>
-
-        IM = Image
-        CC = CAMCube
-        <Prefix> = Empty, W(erkplek), or M(achinekamer)
-        <main version> = VMware ESXi version. 2 digits. Like 55 for Version 5.5
-        <sub version>  = Patch, Express Patch or Update number.
-                            Allowed characters are P(patch), EP (express patch) or U (update)
-        <datestamp>    = Creation date.
-                         Format YYYYMMDD
-                            YYYY = 4 digit year
-                            MM   = 2 digit Month
-                            DD   = 2 digit day
-
-        Examples :
-            IM-CCESXi55-20150607      =  VMware ESXi 5.5 image for CAMCube (werkplek and Machinekamer) created on june the 7th 2015
-            IM-CCWESXi60U2-20150607   =  VMware ESXi 6.0 Update 2 image for CAMCube werkplek, created on june the 7th 2015
-            IM-CCMESXi50EP12-20150607 =  VMware ESXi 5.0 Express Patch 12 image for CAMCube machinekamer, created on june the 7th 2015
-    #>
-    [cmdletbinding()]
-    Param(
-        [Parameter(Mandatory,Helpmessage="Image name to validate")][string]$ImageName,
-        [Parameter(Helpmessage="Display explaination when name is not according to convention.")][switch]$Explain
-    )
-    #-- check prefix
-    $Pre= $ImageName -match "^IM-CC(E|WE|ME)"
-    #-- validate ESXi version
-    $ESXiVersion=$imagename.Substring(5) -match "(|W|M)ESXi\d{2,2}(|(P|U|EP))\d{1,2}"
-    #-- validate date stamp
-    $dateStamp=$imagename.Split("-")[2] -match "\d{4,4}(0[1-9]|1[0-2])(0[1-9]|(1|2)[0-9]|3[0-1])$"
-    #-- write explenation
-    if (-not($pre -and $ESXiVersion -and $dateStamp) -and $Explain) {
-        write-warning "Image naam $imagename is niet conform conventie."
-        Write-host ""
-        write-host "Conventie     : " -NoNewline        if (-not($pre)) {$tmp=@{ForegroundColor="yellow"}}        else {$tmp=""}        write-host "<Prefix>" @tmp -NoNewline        if (-not($ESXiVersion)) {$tmp=@{ForegroundColor="yellow"}}        else {$tmp=""}        write-host "<ESXi versie>" -NoNewline @tmp        if (-not($dateStamp)) {$tmp=@{ForegroundColor="yellow"}}        else {$tmp=""}        write-host "-<Datum stempel>" @tmp        write-host "              : vb. IM-CCMESXi55EP6-20150515"        write-host "                    Image profile voor MK hosts, ESXi 5.5 Express patch 6, "        write-host "                    aangemaakt op 15 mei 2015"        write-host "Prefix        : IM-CC of IM-CCW of IMCCM"
-        write-host "ESXi versie   : ESXiAABB"        write-host "        AA    : ESXi versie, b.v. 55 voor 5.5"        write-host "        BB    : Patch versie.  EP = express patch,"        write-host "                               P  = Patch,"        write-host "                               U  = Update"        write-host "                Expres Patch 5 = EP5."        write-host "                Wordt weggelaten bij GA versie."
-        write-host "Datum stempel : YYYYMMDD"        write-host "                YYYY = jaar"        write-host "                MM   = maand (incl. voorloop nul) 01 t/m 12"
-        write-host "                DD   = dag   (incl. voorloop nul) 01 t/m 31"
-    }
-    #-- return validation
-    return ($pre -and $ESXiVersion -and $dateStamp)
-    }
-
     function check-folderStructure {
     <#
     .SYNOPSIS
