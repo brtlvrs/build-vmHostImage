@@ -271,7 +271,11 @@ Begin{
 
     $List=@()
     $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-6.*-standard"
+    $row.Filter="ESXi-6.5.*-standard"
+    $row.Omschrijving="vSphere host 6.5"
+    $row.id="65"
+    $row= "" | select Filter,Omschrijving,ID
+    $row.Filter="ESXi-6.0.*-standard"
     $row.Omschrijving="vSphere host 6.0"
     $row.id="60"
     $list+=$row
