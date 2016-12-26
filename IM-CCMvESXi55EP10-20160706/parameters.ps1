@@ -1,7 +1,7 @@
-﻿@{
-    #-- Excluded VIBs
+#-- Automaticly generated
+@{
     ExcludeVIBS=@(
-        "lsi-mr3",   #-- conflicts cisco megaraid scsi driver
-        "lsi-msgpt3" #-- conflicts cisco megaraid scsi driver
+    "lsi-mr3",
+    "lsi-msgpt3"
     )
 }

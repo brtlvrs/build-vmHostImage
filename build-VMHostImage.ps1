@@ -618,19 +618,23 @@ Process{
         Write-Verbose "Found parameters.ps1 in $ProjectPath"
         $ProjectParam= & "$projectpath\parameters.ps1"
         if ($ProjectParam.ExcludeVIBS.count -gt 0) {
-            #-- project parameters.ps1 contains VIBS to exlcude
+            #-- project parameters.ps1 contains VIBS to exclude
+            if ($P.ContainsKey("ExcludeVibs") -eq $false) {
+                #-- excludeVibs doesn't exist in $P, adding it
+                $P.add("ExcludeVibs",@())
+            }
             Write-Verbose "Found ExcludeVibs in project parameters file."            $NewVibs2Exclude= Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs | ?{$_.SideIndicator -eq "=>"} | Select -ExpandProperty inputobject
-            if ($NewVibs2Exclude) {object
+            if ($NewVibs2Exclude) {
                 #-- Add Vibs 2 exclude to $P.excludevibs 
                 $NewVibs2Exclude | %{
                     $P.ExcludeVIBS+= $_
                     write-verbose "$_ added to exclusion list"
                 }
             } else {
-                write-verbose "No VIBS found in paramters.ps1 project file to exclude"
+                write-verbose "No VIBS found in paramters.ps1 project
+                 file to exclude"
             }
         }
-
     }
 
     #-- determine vCenter FQDN for HA vib
@@ -796,7 +800,7 @@ Process{
     if ((($VibList.count -ne 0) -or ($noHA -eq $false)) ) { add-Vibs2Image -ProjectPath $projectpath -NewImName $NewIMName }
 
 
-    #-- 4b. Exclude vibs
+    #-- 5b. Exclude vibs
     if ($p.ExcludeVIBS.count -gt 0) {
         #-- find vibs in new imageprofile to exclude
         $IMProfile=Get-EsxImageProfile -Name $NewImName
@@ -823,6 +827,29 @@ Process{
             #-- write to file which VIBS are removed
             Out-File -FilePath $ProjectPath\Image\Excluded.txt -InputObject ($RemovedVibs | Select Name,Vendor,Version,Summary,Description | ft -AutoSize | Out-String -Width 4096)
         }
+    }
+
+    #-- create parameters.ps1 file in project folder
+    if ($P.ExcludeVIBS) {
+        if (Test-Path $projectpath\parameters.ps1) {
+            write-host "Parameters.ps1 exists in project folder, it will be overwritten."
+        }
+        #-- write excluded vibs to parameters.ps1 in project folder
+        new-item -Path $projectpath -Name parameters.ps1 -force 
+        add-content -path $projectpath\parameters.ps1 -value "#-- Automaticly generated"
+        Add-Content -Path $projectpath\parameters.ps1 -Value "@{"
+        Add-Content -Path $projectpath\parameters.ps1 -Value "    ExcludeVIBS=@("
+        $I=$p.ExcludeVIBS.count
+        $P.ExcludeVIBS | %{
+            if ($I -gt 1) {
+                Add-Content -PassThru $projectpath\parameters.ps1 -Value ("    `"" + $_+ "`",") 
+            } else {
+                Add-Content -PassThru $projectpath\parameters.ps1 -Value ("    `"" + $_ + "`"")
+            }
+            $I--         
+        }
+        Add-Content -PassThru $projectpath\parameters.ps1 -Value ("    )")
+        Add-Content -PassThru $projectpath\parameters.ps1 -Value ("}")
     }
 
     #-- 6. image exporteren als offline bundle en als .iso
