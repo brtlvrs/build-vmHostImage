@@ -40,7 +40,7 @@
     File Name          : build-VMHostImage.ps1
     Author             : B. Lievers
     Prerequisite       : PowerShell V2 over Vista and upper.
-    Version            : 0.1
+    Version            : 0.2
     License            : MIT License
     Copyright 2016 - Bart Lievers
 #>
@@ -609,9 +609,6 @@ Process{
     $NewImName =get-ImageName -NewIMName $IMproject
     $ProjectPath="$scriptpath\$NewImName"
 
-    #-- determine Image name according to foldername and validate it
-
-
     #-- controleer de folderstrucuur
     $hadNoDirs=check-folderStructure -projectpath $projectpath
 
@@ -630,6 +627,11 @@ Process{
     # remove all software depots
     write-host "ESXi software depot initïaliseren"
     Get-EsxSoftwareDepot | %{  Remove-EsxSoftwareDepot -SoftwareDepot $_ -ErrorAction silentlycontinue}
+
+    #-- Warn that possibly VIBs are going to be excluded
+    if ($P.ExcludeVIBS.count -gt 0 ){
+        Write-host "Extra input needed during proces, found VIBS to exlude."
+    }
 
     #-- 2. Selecting offline bundle to use as source. Using or Source folder or VMware online software depot.
     $OfflineBundles=@()
@@ -743,6 +745,7 @@ Process{
     }
     $URLDepots.GetEnumerator() | %{Add-EsxSoftwareDepot -DepotUrl $_ | out-null}
 
+
     #-- 4. Clone het image profile uit de offline bundle
     Write-host "4. Building new ESXi Image profile $NewIMName ."
 
@@ -766,9 +769,40 @@ Process{
     }
 
     New-EsxImageProfile -CloneProfile $SourceIMName -Name $NewIMName -Vendor VMware | select Name,Vendor,Description,CreationTime | ft -AutoSize
+
     #-- 5. VIBs toevoegen aan image
     Write-host "5. Toevoegen van vibs aan het nieuwe image profile $NewIMName."
     if ((($VibList.count -ne 0) -or ($noHA -eq $false)) ) { add-Vibs2Image -ProjectPath $projectpath -NewImName $NewIMName }
+
+
+    #-- 4b. Exclude vibs
+    if ($p.ExcludeVIBS.count -gt 0) {
+        #-- find vibs in new imageprofile to exclude
+        $IMProfile=Get-EsxImageProfile -Name $NewImName
+        $Vibs2Exclude=Compare-Object -ReferenceObject ($IMProfile).VibList.name -DifferenceObject $P.ExcludeVIBS -IncludeEqual -ExcludeDifferent | select -ExpandProperty Inputobject
+        if ($Vibs2Exclude) {
+            #-- found vibs in imageprofile to remove
+            write-host "Found the following vibs in the new image to exclude:"
+            $Vibs2Exclude | %{write-host "   " + $_}
+            $vibs2Exclude | %{
+                #-- remove vib
+                $Vib2Remove=$_
+                $VIB=Get-EsxSoftwarePackage -Name $vib2remove
+                Remove-EsxSoftwarePackage -ImageProfile $newimname -SoftwarePackage $Vib2Remove -ErrorVariable Err1 -ErrorAction SilentlyContinue
+                if ($Err1) {
+                    #-- failed to remove vib
+                    Write-Warning "Error removing VIB " + $Vib2Remove
+                    Write-warning $Err1
+                } else {
+                    #-- Vib removed
+                    Write-Verbose "Removed "+ $vib2remove
+                    $RemovedVibs+=$VIB
+                }
+            }
+            #-- write to file which VIBS are removed
+            Out-File -FilePath $ProjectPath\Image\Excluded.txt -InputObject ($RemovedVibs | Select Name,Vendor,Version,Summary,Description | ft -AutoSize | Out-String -Width 4096)
+        }
+    }
 
     #-- 6. image exporteren als offline bundle en als .iso
     write-host "6. Exporting Image profile $NewIMName  to a offline bundle and .iso"

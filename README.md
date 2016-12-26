@@ -7,10 +7,16 @@ This script is released under the MIT license. See the License file for more det
 ### CHANGE LOG
 |build|branch |  Change |
 |---|---|---|
+|0.2| develop/v0.2| Subroutines to exclude vibs from new image|
 |0.1| develop/v0.1| Initial code|
 |0.0| Master| Initial release|
 
-### How do I get set up?
+### How do I get set up?  
+1. Download script
+2. Modify parameters in parameters.ps1
+3. (optional) If folder structure is already in place, put VIBS in the vib subfolder of the image profile folder
+3. run script
+(scrip will ask to place VIBS, if vibs are not found and create subfolder structure if needed.)
 
 
 
