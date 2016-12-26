@@ -809,6 +809,7 @@ Process{
             #-- found vibs in imageprofile to remove
             write-host "Found the following vibs in the new image to exclude:"
             $Vibs2Exclude | %{write-host "   " + $_}
+            $removedVibs=@()
             $vibs2Exclude | %{
                 #-- remove vib
                 $Vib2Remove=$_
