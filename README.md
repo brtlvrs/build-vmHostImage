@@ -7,8 +7,9 @@ This script is released under the MIT license. See the License file for more det
 ### CHANGE LOG
 |build|branch |  Change |
 |---|---|---|
-|0.2| develop/v0.2| Subroutines to exclude vibs from new image|
-|0.1| develop/v0.1| Initial code|
+|0.2| Master| Current version |
+|0.2| release/v0.2| Subroutines to exclude vibs from new image|
+|0.1| release/v0.1| Initial code|
 |0.0| Master| Initial release|
 
 ### How do I get set up?  
