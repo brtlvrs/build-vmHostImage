@@ -41,7 +41,7 @@
     File Name          : build-VMHostImage.ps1
     Author             : B. Lievers
     Prerequisite       : PowerShell V2 over Vista and upper.
-    Version            : 0.3
+    Version            : 0.2.1
     License            : MIT License
     Copyright 2016 - Bart Lievers
 #>
