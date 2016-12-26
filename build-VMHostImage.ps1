@@ -613,6 +613,26 @@ Process{
     #-- controleer de folderstrucuur
     $hadNoDirs=check-folderStructure -projectpath $projectpath
 
+    #-- check if project has parameters.ps1 file
+    if (Test-Path -Path ($ProjectPath + "\parameters.ps1")) {
+        Write-Verbose "Found parameters.ps1 in $ProjectPath"
+        $ProjectParam= & "$projectpath\parameters.ps1"
+        if ($ProjectParam.ExcludeVIBS.count -gt 0) {
+            #-- project parameters.ps1 contains VIBS to exlcude
+            Write-Verbose "Found ExcludeVibs in project parameters file."            $NewVibs2Exclude= Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs | ?{$_.SideIndicator -eq "=>"} | Select -ExpandProperty inputobject
+            if ($NewVibs2Exclude) {object
+                #-- Add Vibs 2 exclude to $P.excludevibs 
+                $NewVibs2Exclude | %{
+                    $P.ExcludeVIBS+= $_
+                    write-verbose "$_ added to exclusion list"
+                }
+            } else {
+                write-verbose "No VIBS found in paramters.ps1 project file to exclude"
+            }
+        }
+
+    }
+
     #-- determine vCenter FQDN for HA vib
     $noHA=$noHA -or $hadNoDirs #-- The vib is not loaded when the folderstructure is not found.
     if ($noHA -eq $false) { $noHa=validate-vCenterFQDN -ProjectPath $ProjectPath }
