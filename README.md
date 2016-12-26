@@ -7,6 +7,7 @@ This script is released under the MIT license. See the License file for more det
 ### CHANGE LOG
 |build|branch |  Change |
 |---|---|---|
+|0.2.1| develop/v0.2| Excluded vibs are saved in parameters.ps1 project file|
 |0.2| develop/v0.2| Subroutines to exclude vibs from new image|
 |0.1| develop/v0.1| Initial code|
 |0.0| Master| Initial release|
