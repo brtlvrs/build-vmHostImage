@@ -4,6 +4,11 @@ PowerCLI workflow script for building VMware vSphere ESXi images
 ### LICENSE
 This script is released under the MIT license. See the License file for more details
 
+| | |
+|---|---|
+| Version | 0.2.1|
+| branch | develop/v0.3|
+
 ### CHANGE LOG
 |build|branch |  Change |
 |---|---|---|
