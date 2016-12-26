@@ -23,6 +23,7 @@
                    added.txt                          --- list of vibs added to the source image
                    skipped.txt                        --- vibs that are skipped
                    viblist.txt                        --- list containing all vibs in the created image
+                   excluded.txt                       --- list of VIBS that are excluded in created image
 
     When the script detects no folder structure beneath the <image name>, it will create one.
     Also, if there is no offline bundle in the source folder, the script will contact the online VMware repository 
@@ -40,7 +41,7 @@
     File Name          : build-VMHostImage.ps1
     Author             : B. Lievers
     Prerequisite       : PowerShell V2 over Vista and upper.
-    Version            : 0.2
+    Version            : 0.3
     License            : MIT License
     Copyright 2016 - Bart Lievers
 #>
