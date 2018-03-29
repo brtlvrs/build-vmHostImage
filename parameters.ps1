@@ -4,7 +4,10 @@
     #-- VMware Online depot URL
     VMwareDepot="https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml"
     #-- are IM project folders siblings 
-	ProjectIMFoldersAreSiblings=$false
+    ProjectIMFoldersAreSiblings=$false
+    
+    #-- subfolder for script functions
+    FunctionsSubFolder="functions"
 
     #-- Excluded VIBs
     ExcludeVIBS=@(

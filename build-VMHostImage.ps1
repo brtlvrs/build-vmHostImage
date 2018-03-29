@@ -69,6 +69,18 @@ Begin{
         $scriptpath=split-path -Path $scriptpath -Parent
     }
 
+    # Gather all files
+    $Functions  = @(Get-ChildItem -Path ($scriptpath+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
+
+    # Dot source the functions
+    ForEach ($File in @($Functions)) {
+        Try {
+            . $File.FullName
+        } Catch {
+            Write-Error -Message "Failed to import function $($File.FullName): $_"
+        }       
+    }
+
     #-- initialize variables
     $URLDepots=@()
     $VIBlist= @()
@@ -623,7 +635,8 @@ Process{
                 #-- excludeVibs doesn't exist in $P, adding it
                 $P.add("ExcludeVibs",@())
             }
-            Write-Verbose "Found ExcludeVibs in project parameters file."            $NewVibs2Exclude= Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs | ?{$_.SideIndicator -eq "=>"} | Select -ExpandProperty inputobject
+            Write-Verbose "Found ExcludeVibs in project parameters file."
+            $NewVibs2Exclude= Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs | ?{$_.SideIndicator -eq "=>"} | Select -ExpandProperty inputobject
             if ($NewVibs2Exclude) {
                 #-- Add Vibs 2 exclude to $P.excludevibs 
                 $NewVibs2Exclude | %{
@@ -700,13 +713,24 @@ Process{
 
     if ($UsingVMwareRepos) {
     if ((test-URL -URL $P.VMwareDepot) -eq $false)  {
-        Write-Warning "Couldn't reach VMware Software Depot."        exit-script
+        Write-Warning "Couldn't reach VMware Software Depot."
+        exit-script
     }
         write-host "Busy loading VMware Software Depot."
         $URLDepots += $P.VMwareDepot
         Add-EsxSoftwareDepot -DepotUrl $P.VMwareDepot | out-null
         #-- vanwege een bug moet er gefilterd worden, zie vmware KB 2089217 voor meer info
-        #-- filter a.d.v. opgegeven VMware versie in image naam        switch -Regex ($NewIMName) {            #-- image naam is een IM-.... image            "^IM-\d{2,2}(|(P|U|EP)\d{1,2})" {                $version = $NewIMName.Substring(3,2)                $tmpOnlineFilter=Filter-VMwareDepot -version $version                break                }            #-- image naam is niet conform naamconventie            default {$tmpOnlineFilter=Filter-VMwareDepot }        }
+        #-- filter a.d.v. opgegeven VMware versie in image naam
+        switch -Regex ($NewIMName) {
+            #-- image naam is een IM-.... image
+            "^IM-\d{2,2}(|(P|U|EP)\d{1,2})" {
+                $version = $NewIMName.Substring(3,2)
+                $tmpOnlineFilter=Filter-VMwareDepot -version $version
+                break
+                }
+            #-- image naam is niet conform naamconventie
+            default {$tmpOnlineFilter=Filter-VMwareDepot }
+        }
         #-- select an image as the source
         $SourceIMName=Get-EsxImageProfile -Name $tmpOnlineFilter | select name,Vendor,Description,CreationTime | sort Name | Out-GridView -Title "Select an ESXi image"  -PassThru | select -ExpandProperty Name
         #-- check if name of the source and name of the new image are not the same
