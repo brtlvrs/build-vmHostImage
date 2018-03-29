@@ -69,7 +69,7 @@ Begin{
         $scriptpath=split-path -Path $scriptpath -Parent
     }
 
-    # Gather all files
+    # Gather all supporting functions
     $Functions  = @(Get-ChildItem -Path ($scriptpath+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
 
     # Dot source the functions
@@ -89,28 +89,21 @@ Begin{
 #region Functions
 
     function exit-script {
-    <#
-    .DESCRIPTION
-        Clean up actions before we exit the script.
-    #>
-    [CmdletBinding()]
-    Param()
-    #-- disconnect vCenter connections (if there are any)
-    if ((Get-Variable -Scope global -Name DefaultVIServers -ErrorAction SilentlyContinue ).value) {
-        Disconnect-VIServer -server * -Confirm:$false
-    }
-    #-- clock time and say bye bye
-    $ts_end=get-date
-    write-host ("Runtime script: {0:hh}:{0:mm}:{0:ss}" -f ($ts_end- $TS_start)  )
-    read-host "End script. bye bye ([Enter] to quit.)"
-    exit
-    }
-
-    function unload-PowerCLI {
-        if (Get-PSSnapin -Name "VMware*") {
-            Get-PSSnapin -Name "VMware*" | Remove-PSSnapin
-            write-host "PowerCLI snappins worden verwijderd uit het geheugen."
-            }
+        <#
+        .DESCRIPTION
+            Clean up actions before we exit the script.
+        #>
+        [CmdletBinding()]
+        Param()
+        #-- disconnect vCenter connections (if there are any)
+        if ((Get-Variable -Scope global -Name DefaultVIServers -ErrorAction SilentlyContinue ).value) {
+            Disconnect-VIServer -server * -Confirm:$false
+        }
+        #-- clock time and say bye bye
+        $ts_end=get-date
+        write-host ("Runtime script: {0:hh}:{0:mm}:{0:ss}" -f ($ts_end- $TS_start)  )
+        read-host "End script. bye bye ([Enter] to quit.)"
+        exit
     }
 
     function check-folderStructure {
