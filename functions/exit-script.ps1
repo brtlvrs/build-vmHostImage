@@ -44,7 +44,7 @@ function exit-script {
     Param(
           [scriptblock]$defaultcleanupcode)
 
-    if ($finished_normal) {
+    if ($NormalExit) {
         $msg= "Hooray.... finished without any bugs....."
         if ($log) {$log.verbose($msg)} else {Write-Verbose $msg}
     } else {
