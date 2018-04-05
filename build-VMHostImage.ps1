@@ -69,22 +69,14 @@ Begin{
         $scriptpath=split-path -Path $scriptpath -Parent
     }
 
-    # Gather all supporting functions
-    $Functions  = @(Get-ChildItem -Path ($scriptpath+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
-
-    # Dot source the functions
-    ForEach ($File in @($Functions)) {
-        Try {
-            . $File.FullName
-        } Catch {
-            Write-Error -Message "Failed to import function $($File.FullName): $_"
-        }       
-    }
+    #-- load functions
+    import-module $scriptpath\functions\functions.psm1 #-- the module scans the functions subfolder and loads them as functions
+    #-- add code to execute during exit script. Removing functions module
+    $p.Add("cleanUpCodeOnExit",{remove-module -Name functions -Force -Confirm:$false})
 
     #-- initialize variables
     $URLDepots=@()
     $VIBlist= @()
-
 
 #region Functions
 
