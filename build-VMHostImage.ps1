@@ -196,7 +196,8 @@ Begin{
     if ($version.Length -eq 0) {
         $answer=$list | select filter,Omschrijving | Out-GridView -PassThru -title "Selecteer ESXi versie."  | select -ExpandProperty  Filter
     } else {
-        $answer=$list | ?{$_.id -eq $version} | select -ExpandProperty filter
+
+        $answer=$list.where({$_.id -eq $version}).filter
     }
     return $answer
     }
