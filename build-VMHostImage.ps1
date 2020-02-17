@@ -126,7 +126,7 @@ Begin{
     )
 
     $runExport=$false
-    if (Get-ChildItem -Path ("$ProjectPath\image") | ?{$_.fullname -match "$NewIMName.zip|$NewImName.iso"}) {
+    if ((Get-ChildItem -Path ("$ProjectPath\image")).where({$_.fullname -match "$NewIMName.zip|$NewImName.iso"})) {
         write-host "Unable to export to offline bundle and/or .iso, files already exist in image folder."
             do {
                 #-- Ask if files can be removed.
@@ -139,7 +139,7 @@ Begin{
                         #-- remove old files
                         $RunExport=$true
                         write-host "Removing existing offline bundle and .iso file in image folder."
-                        Get-ChildItem -Path ("$ProjectPath\image") | ?{$_.fullname -match "$NewIMName.zip|$NewImName.iso"} | Remove-Item -Force
+                        (Get-ChildItem -Path ("$ProjectPath\image")).where({$_.fullname -match "$NewIMName.zip|$NewImName.iso"}) | Remove-Item -Force
                         break
                         }
                     "[^yYjJnN]" {
@@ -236,7 +236,7 @@ Begin{
         write-host "VMware Offline bundle $SourceIMName is being downloaded to the source folder." 
         $exportpath="$ProjectPath\Source\$SourceIMName.zip"
         $answer=$false
-        if (Get-ChildItem -Path ("$ProjectPath\Source") | ?{$_.fullname -match "$SourceIMName.zip"}) {
+        if ( ( Get-ChildItem -Path ("$($ProjectPath)\Source") ).where({$_.fullname -match "$($SourceIMName).zip"}) ) {
             do {
                 $answer=read-host "$SourceIMName already exists in .\source\ folder, do you want to replace it ? [y/N]"
                 if ($answer.Length -eq 0) {$answer="N"}
@@ -381,18 +381,18 @@ Begin{
     )
         $SWPackageList=$null
         $SWPackageList=@()
-        $viblist | %{
+        $viblist.foreach({
             $VIB=$_
             #-- add softwarepackages
-            Get-EsxSoftwareDepot |  ?{$_.depoturl -ilike ("*"+$vib.name+"*")} | Get-EsxSoftwarePackage | %{
+            (Get-EsxSoftwareDepot.where({$_.depoturl -ilike ("*"+$vib.name+"*")}) | Get-EsxSoftwarePackage).foreach({
                $SWPackageList+=$_
-            }
-        }
+            })
+        })
         if ($noHA -eq $false) {
               #-- add HA vib to softwarepackages
-              Get-EsxSoftwareDepot |  ?{$_.depoturl -ilike ("*"+ "http://"+ $FQDNvCenter +"/vSphere-HA-depot"+"*")} | Get-EsxSoftwarePackage | %{
+              ((Get-EsxSoftwareDepot).where({$_.depoturl -ilike ("*"+ "http://"+ $FQDNvCenter +"/vSphere-HA-depot"+"*")}) | Get-EsxSoftwarePackage).foreach({
                 $SWPackageList+=$_
-                }
+                })
             }
         #-- process softwarepackages
         if ($SWPackageList.count -ne 0) {
@@ -518,7 +518,7 @@ Process{
                 $P.add("ExcludeVibs",@())
             }
             Write-Verbose "Found ExcludeVibs in project parameters file."
-            $NewVibs2Exclude= Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs | ?{$_.SideIndicator -eq "=>"} | Select -ExpandProperty inputobject
+            $NewVibs2Exclude= ((Compare-Object -ReferenceObject $P.ExcludeVibs -DifferenceObject $ProjectParam.ExcludeVibs).where({$_.SideIndicator -eq "=>"})).inputobject
             if ($NewVibs2Exclude) {
                 #-- Add Vibs 2 exclude to $P.excludevibs 
                 $NewVibs2Exclude | %{
@@ -694,7 +694,7 @@ Process{
 
     #--clone to new image profile
     if (-not($UsingVMwareRepos)) {
-        $tmp=Get-EsxImageProfile | ?{$_.name -match "\d-standard$" } | sort | select -First 1 -ExpandProperty name
+        $tmp=(Get-EsxImageProfile).where({$_.name -match "\d-standard$" }) | sort | select -First 1 -ExpandProperty name
         $SourceIMName=(get-EsxImageProfile | select name | Out-GridView -Title "Select source offline bundle to use?"   -PassThru).name
         if ($SourceIMName.length -lt 1) {$SourceIMName=$tmp}
     }
