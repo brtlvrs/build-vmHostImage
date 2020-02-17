@@ -47,8 +47,11 @@
 #>
 [CmdletBinding()]
 Param(
-    [Parameter(HelpMessage="[Boolean] Don't add the VMware HA vib")][switch]$noHA,
-   [Parameter(Position=0,HelpMessage="[Boolean] Use the VMware online software Depot as source")] [switch]$useVMwareDepot
+    [Parameter(HelpMessage="[Boolean] Don't add the VMware HA vib")]
+    [switch]$noHA,
+   [Parameter(Position=1,HelpMessage="[Boolean] Use the VMware online software Depot as source")] 
+   [switch]$useVMwareDepot,
+   [string]$imageName=""
    )
 
 
@@ -497,12 +500,26 @@ Process{
     #-- start of script
     #-- 1. load PowerCLI
     write-host "1. Loading PowerCLI"
-    import-PowerCLI | out-null
+    import-module vmware.powercli -ErrorVariable err1 | out-null
+    if ($err1) {
+        Write-Warning "Failed to load VMware PowerCLI."
+        exit-script
+    }
 
     #-- Select Project folder
-    $IMProject = get-imageProject
-    $NewImName =get-ImageName -NewIMName $IMproject
-    $ProjectPath="$scriptpath\$NewImName"
+    if ($imageName) {
+        $path="$($scriptpath)\$($imageName)"
+        if (!(test-path -path $path)) {
+            new-item -Path $path -ItemType "directory"
+        }
+        $IMProject = $imageName
+        $projectPath=$path
+        $NewImName= $imageName
+    } else {
+        $IMProject = get-imageProject    
+        $NewImName =get-ImageName -NewIMName $IMproject
+        $ProjectPath="$scriptpath\$NewImName"
+    }
 
     #-- controleer de folderstrucuur
     $hadNoDirs=check-folderStructure -projectpath $projectpath
