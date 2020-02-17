@@ -168,31 +168,27 @@ Begin{
     )
 
     $List=@()
-    $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-6.5.*-standard"
-    $row.Omschrijving="vSphere host 6.5"
-    $row.id="65"
-    $list+=$row
-    $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-6.0.*-standard"
-    $row.Omschrijving="vSphere host 6.0"
-    $row.id="60"
-    $list+=$row
-    $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-5.5.*-standard"
-    $row.Omschrijving="vSphere host 5.5"
-    $row.id="55"
-    $list+=$row
-    $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-5.1.*-standard"
-    $row.Omschrijving="vSphere host 5.1"
-    $row.id="51"
-    $list+=$row
-    $row= "" | select Filter,Omschrijving,ID
-    $row.Filter="ESXi-5.0.*-standard"
-    $row.Omschrijving="vSphere host 5.0"
-    $row.id="50"
-    $list+=$row
+    $list+=new-object psobject -property @{
+        Filter="ESXi-6.7.*-standard"
+        Omschrijving="vSphere host 6.7"
+        id="67"
+    }
+    $list+=new-object psobject -property @{
+        Filter="ESXi-6.5.*-standard"
+        Omschrijving="vSphere host 6.5"
+        id="65"
+    }
+    $list+=new-object psobject -property @{
+        Filter="ESXi-6.0.*-standard"
+        Omschrijving="vSphere host 6.0"
+        id="60"
+    }
+    $list+=new-object psobject -property @{
+        Filter="ESXi-5.5.*-standard"
+        Omschrijving="vSphere host 5.5"
+        id="55"
+    }
+
     if ($version.Length -eq 0) {
         $answer=$list | select filter,Omschrijving | Out-GridView -PassThru -title "Selecteer ESXi versie."  | select -ExpandProperty  Filter
     } else {
